@@ -1,5 +1,6 @@
 module NoahmpDriverMainMod
 
+   use netcdf
    use Machine
    use NoahmpVarType
    use NoahmpIOVarType
@@ -51,6 +52,8 @@ contains
       real(kind=kind_noahmp), dimension(1:NoahmpIO%nsoil) :: SAND
       real(kind=kind_noahmp), dimension(1:NoahmpIO%nsoil) :: CLAY
       real(kind=kind_noahmp), dimension(1:NoahmpIO%nsoil) :: ORGM
+      integer :: ierr, ncid, nx_id, ny_id, shbxy_id, evbxy_id, lh_id, start(2), count(2)
+
 ! -------------------------------------------------------------------------
 
       NoahmpIO%P8W(:, 2, :) = NoahmpIO%P8W(:, 1, :)              ! WRF uses lowest two layers
@@ -246,6 +249,30 @@ contains
             end do ILOOP  ! I loop
          end do JLOOP    ! J loop
       end if
+
+   ierr = nf90_create("erf_noah_output.nc", NF90_CLOBBER, ncid)
+
+   ! Define dimensions and variable
+   ierr = nf90_def_dim(ncid, "NX", NoahmpIO%xend-NoahmpIO%xstart+1, nx_id)
+   ierr = nf90_def_dim(ncid, "NY", NoahmpIO%yend-NoahmpIO%ystart+1, ny_id)
+   ierr = nf90_def_var(ncid, "SHBXY", NF90_FLOAT, (/1, 2/), shbxy_id)
+   ierr = nf90_def_var(ncid, "EVBXY", NF90_FLOAT, (/1, 2/), evbxy_id)
+   ierr = nf90_def_var(ncid, "LH", NF90_FLOAT, (/1, 2/), lh_id)
+
+   ! End definition mode
+   ierr= nf90_enddef(ncid)
+
+   ! Select portion to write
+   start = (/NoahmpIO%xstart+1, NoahmpIO%ystart+1/)
+   count = (/NoahmpIO%xend-NoahmpIO%xstart+1, NoahmpIO%yend-NoahmpIO%ystart+1/)
+
+   ! Write data
+   ierr =  nf90_put_var(ncid, shbxy_id, NoahmpIO%SHBXY, start=start, count=count)
+   ierr =  nf90_put_var(ncid, evbxy_id, NoahmpIO%EVBXY, start=start, count=count)
+   ierr =  nf90_put_var(ncid, lh_id, NoahmpIO%LH, start=start, count=count)
+
+   ! Close file
+   ierr =  nf90_close(ncid)
 
    end subroutine NoahmpDriverMain
 

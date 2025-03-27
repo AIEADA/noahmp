@@ -53,6 +53,7 @@ contains
       real(kind=kind_noahmp), dimension(1:NoahmpIO%nsoil) :: CLAY
       real(kind=kind_noahmp), dimension(1:NoahmpIO%nsoil) :: ORGM
       integer :: ierr, ncid, nx_id, ny_id, shbxy_id, evbxy_id, lh_id, start(2), count(2)
+      character(len=4) :: ts_str
 
 ! -------------------------------------------------------------------------
 
@@ -250,7 +251,8 @@ contains
          end do JLOOP    ! J loop
       end if
 
-   ierr = nf90_create("erf_noah_output.nc", NF90_CLOBBER, ncid)
+   write(ts_str, '(I4.4)') NoahmpIO%ITIMESTEP
+   ierr = nf90_create(trim("erf_noah_output_" // trim(ts_str) // ".nc"), NF90_CLOBBER, ncid)
 
    ! Define dimensions and variable
    ierr = nf90_def_dim(ncid, "NX", NoahmpIO%xend-NoahmpIO%xstart+1, nx_id)

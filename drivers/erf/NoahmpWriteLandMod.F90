@@ -24,13 +24,16 @@ contains
 
       ! local variables
       integer :: ierr, start(2), count(2), nx, ny, comp2d, nsoil
-      character(len=5) :: ts_str
+      character(len=32) :: ts_str
       character(len=1) :: lev_str
-      character(len=100) :: dir, filename
+      character(len=256) :: dir, filename
       logical :: ex
 
       if (NoahmpIO%blkid == 0) then
-         write (ts_str, '(I5.5)') filenum
+         ! Zero-pad to at least 5 digits (keeps lnd00000..lnd99999 naming) but
+         ! grow automatically for >=100000 so the timestamp never overflows the
+         ! string field (the old len=5/I5.5 produced 'lnd*****' past 99999).
+         write (ts_str, '(I0.5)') filenum
          write (lev_str, '(I1.1)') NoahmpIO%LEVEL
 
          dir = "lnd"//trim(ts_str)

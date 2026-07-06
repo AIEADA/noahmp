@@ -37,6 +37,8 @@ extern "C" {
         double* P8W = nullptr;
         double* TAU_EW = nullptr;
         double* TAU_NS = nullptr;
+        double* RAINBL = nullptr;     // precip entering land model, accumulated [mm] over the land-call interval (WRF convention)
+        double* SR = nullptr;         // frozen fraction of precipitation [-]
 
         NoahmpIO_type_fi(        
           int* ids, int* ide, int* jds, int* jde, int* kds, int* kde,
@@ -86,6 +88,8 @@ class NoahmpIO_type {
         NoahArray2D<double> COSZEN;
         NoahArray3D<double> P8W;
         NoahArray2D<double> TAU_EW, TAU_NS;
+        NoahArray2D<double> RAINBL;
+        NoahArray2D<double> SR;
 
         NoahmpIO_type():
           fptr(&ids, &ide, &jds, &jde, &kds, &kde,

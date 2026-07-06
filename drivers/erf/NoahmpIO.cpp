@@ -88,6 +88,8 @@ void NoahmpIO_type::VarInitDefault() {
 
       TAU_EW = NoahArray2D<double>(fptr.TAU_EW, {xstart,ystart}, {xend,yend});
       TAU_NS = NoahArray2D<double>(fptr.TAU_NS, {xstart,ystart}, {xend,yend});
+      RAINBL = NoahArray2D<double>(fptr.RAINBL, {xstart,ystart}, {xend,yend});
+      SR     = NoahArray2D<double>(fptr.SR,     {xstart,ystart}, {xend,yend});
 };
 
 

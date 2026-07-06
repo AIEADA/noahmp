@@ -54,10 +54,23 @@ contains
       NoahmpIO%U_PHY(:, 2, :) = NoahmpIO%U_PHY(:, 1, :)            !
       NoahmpIO%V_PHY(:, 2, :) = NoahmpIO%V_PHY(:, 1, :)            !
       NoahmpIO%QV_CURR(:, 2, :) = NoahmpIO%QV_CURR(:, 1, :)          !
-      NoahmpIO%RAINBL = NoahmpIO%RAINBL*NoahmpIO%DTBL  ! RAINBL in WRF is [mm]
-      NoahmpIO%SNOWBL = NoahmpIO%SNOWBL*NoahmpIO%DTBL  !
-      NoahmpIO%SR = 0.0                              ! Will only use component if opt_snf=4
-      NoahmpIO%RAINCV = 0.0
+      ! ---------------------------------------------------------------------------
+      ! PRECIP UNIT CONVENTION (decision documented 2026-07-06):
+      ! We adopt the OFFICIAL WRF contract. In WRF (phys/module_surface_driver.F
+      ! ~L1628 and NoahmpWRFmainMod.F90:553) the caller supplies RAINBL as the
+      ! precipitation ACCUMULATED over the surface-call interval, in [mm]
+      ! (Registry: RAINBL "PBL TIME-STEP TOTAL PRECIPITATION", units "mm"), and the
+      ! shared ForcingVarInTransferMod (/DTBL) converts it to a [mm/s] rate inside
+      ! Noah-MP. WRF does NOT multiply RAINBL by DTBL here.
+      ! ERF previously carried a non-WRF `RAINBL = RAINBL*DTBL` line (which would
+      ! instead require the caller to pass a mm/s rate). That quirk is REMOVED so the
+      ! ERF precip path is identical to WRF: the ERF driver (ERF_NOAHMP.cpp) now
+      ! writes NoahmpIO%RAINBL as accumulated [mm] = (rain_accum_now - rain_accum_prev).
+      ! ACSNOW += RAINBL (mm) in WaterVarOutTransferMod stays correct under this
+      ! convention. SR (frozen fraction [-]) is now supplied by the caller (as WRF
+      ! does) rather than hard-set to 0.
+      ! ---------------------------------------------------------------------------
+      NoahmpIO%RAINCV  = 0.0
       NoahmpIO%RAINNCV = NoahmpIO%RAINBL
       NoahmpIO%RAINSHV = 0.0
       NoahmpIO%SNOWNCV = NoahmpIO%SNOWBL

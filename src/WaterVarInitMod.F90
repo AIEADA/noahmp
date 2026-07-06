@@ -78,7 +78,12 @@ contains
     noahmp%water%state%PrecipAreaFrac              = undefined_real
     noahmp%water%state%TileDrainFrac               = undefined_real
     noahmp%water%state%FrozenPrecipFrac            = undefined_real
-    noahmp%water%state%WaterStorageWetland         = undefined_real
+    ! Default to 0 (not the undefined sentinel): the surface water-balance check
+    ! (BalanceErrorCheckMod) sums WaterStorageWetland UNCONDITIONALLY, but it is only
+    ! assigned from WSURFXY when OptWetlandModel>0 (WaterVarInTransferMod). With the
+    ! wetland scheme off it would otherwise stay at ~1e20 -> spurious 1e25 balance
+    ! error -> hard stop. A no-wetland column contributes zero wetland storage.
+    noahmp%water%state%WaterStorageWetland         = 0.0
 
     if ( .not. allocated(noahmp%water%state%IndexPhaseChange) )     &
        allocate( noahmp%water%state%IndexPhaseChange(-NumSnowLayerMax+1:NumSoilLayer) )

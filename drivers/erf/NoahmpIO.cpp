@@ -90,6 +90,9 @@ void NoahmpIO_type::VarInitDefault() {
       TAU_NS = NoahArray2D<double>(fptr.TAU_NS, {xstart,ystart}, {xend,yend});
       RAINBL = NoahArray2D<double>(fptr.RAINBL, {xstart,ystart}, {xend,yend});
       SR     = NoahArray2D<double>(fptr.SR,     {xstart,ystart}, {xend,yend});
+      MP_RAINNC = NoahArray2D<double>(fptr.MP_RAINNC, {xstart,ystart}, {xend,yend});
+      MP_SNOW   = NoahArray2D<double>(fptr.MP_SNOW,   {xstart,ystart}, {xend,yend});
+      MP_GRAUP  = NoahArray2D<double>(fptr.MP_GRAUP,  {xstart,ystart}, {xend,yend});
 };
 
 

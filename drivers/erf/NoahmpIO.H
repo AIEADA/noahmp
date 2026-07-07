@@ -39,6 +39,9 @@ extern "C" {
         double* TAU_NS = nullptr;
         double* RAINBL = nullptr;     // precip entering land model, accumulated [mm] over the land-call interval (WRF convention)
         double* SR = nullptr;         // frozen fraction of precipitation [-]
+        double* MP_RAINNC = nullptr;  // total non-convective precip [mm] this interval (WRF MP_RAINNC)
+        double* MP_SNOW = nullptr;    // snow(+ice) subset of MP_RAINNC [mm] (WRF MP_SNOW)
+        double* MP_GRAUP = nullptr;   // graupel subset of MP_RAINNC [mm] (WRF MP_GRAUP)
 
         NoahmpIO_type_fi(        
           int* ids, int* ide, int* jds, int* jde, int* kds, int* kde,
@@ -90,6 +93,9 @@ class NoahmpIO_type {
         NoahArray2D<double> TAU_EW, TAU_NS;
         NoahArray2D<double> RAINBL;
         NoahArray2D<double> SR;
+        NoahArray2D<double> MP_RAINNC;
+        NoahArray2D<double> MP_SNOW;
+        NoahArray2D<double> MP_GRAUP;
 
         NoahmpIO_type():
           fptr(&ids, &ide, &jds, &jde, &kds, &kde,

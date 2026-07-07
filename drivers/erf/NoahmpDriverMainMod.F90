@@ -70,16 +70,17 @@ contains
       ! convention. SR (frozen fraction [-]) is now supplied by the caller (as WRF
       ! does) rather than hard-set to 0.
       ! ---------------------------------------------------------------------------
-      ! SNOWBL (accumulated snow forcing [mm]) is not currently supplied by the ERF
-      ! driver and defaults to the undefined sentinel; zero it so SNOWNCV/MP_SNOW ->
-      ! PrecipSnowRefHeight is defined (otherwise ~1e20 -> Noah-MP water-balance abort).
-      ! Frozen precip is instead handled via SR applied to the total RAINBL downstream.
+      ! Precip breakdown: MP_RAINNC (total non-conv), MP_SNOW (snow+ice) and MP_GRAUP
+      ! (graupel) are supplied DIRECTLY by the ERF C++ driver from the microphysics,
+      ! exactly as WRF's caller does (drivers/wrf/NoahmpWRFmainMod.F90:563-568). Do NOT
+      ! overwrite them here. ERF has no convective, shallow-convective or hail channel,
+      ! so zero those (identical to WRF when those OPTIONAL args are absent). SNOWBL is a
+      ! dead field in WRF too (drivers/wrf/NoahmpIOVarInitMod.F90:595 sets it to
+      ! undefined_real and it is never read); zero it defensively. RAINBL (total) is set
+      ! by the caller and still used by the opt_snf=1 path + ACSNOW.
       NoahmpIO%SNOWBL  = 0.0
       NoahmpIO%RAINCV  = 0.0
-      NoahmpIO%RAINNCV = NoahmpIO%RAINBL
       NoahmpIO%RAINSHV = 0.0
-      NoahmpIO%SNOWNCV = NoahmpIO%SNOWBL
-      NoahmpIO%GRAUPELNCV = 0.0
       NoahmpIO%HAILNCV = 0.0
       NoahmpIO%DZ8W = 2*NoahmpIO%ZLVL                  ! 2* to be consistent with WRF model level
 
@@ -96,11 +97,11 @@ contains
 
       IF (NoahmpIO%ITIMESTEP > 0) THEN
          if (NoahmpIO%rank == 0) write(*,'("Noah-MP running physical processes")')
+         ! MP_RAINNC / MP_SNOW / MP_GRAUP are supplied by the ERF C++ driver (WRF-style
+         ! microphysics breakdown) -- do NOT overwrite. Only the channels ERF lacks are
+         ! zeroed (conv, shallow-conv, hail), matching WRF with those args absent.
          NoahmpIO%MP_RAINC = NoahmpIO%RAINCV
-         NoahmpIO%MP_RAINNC = NoahmpIO%RAINNCV
          NoahmpIO%MP_SHCV = NoahmpIO%RAINSHV
-         NoahmpIO%MP_SNOW = NoahmpIO%SNOWNCV
-         NoahmpIO%MP_GRAUP = NoahmpIO%GRAUPELNCV
          NoahmpIO%MP_HAIL = NoahmpIO%HAILNCV
 
     !---------------------------------------------------------------------

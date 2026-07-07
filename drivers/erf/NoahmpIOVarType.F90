@@ -116,10 +116,13 @@ module NoahmpIOVarType
     real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  GRAUPELNCV          ! non-convective graupel forcing (subset of rainncv) [mm]
     real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  HAILNCV             ! non-convective hail forcing (subset of rainncv) [mm]
     real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  MP_RAINC            ! convective precipitation entering land model [mm] ! MB/AN : v3.7
-    real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  MP_RAINNC           ! large-scale precipitation entering land model [mm]! MB/AN : v3.7
+    ! MP_RAINNC/MP_SNOW/MP_GRAUP are supplied directly by the ERF C++ driver (as WRF's
+    ! caller does) and cross the boundary as double* -> MUST be C_DOUBLE (RAINBL kind-bug
+    ! lesson). They carry the microphysics rain/snow/graupel breakdown so opt_snf=4 works.
+    real(kind=C_DOUBLE),    allocatable, dimension(:,:)    ::  MP_RAINNC           ! large-scale precipitation entering land model [mm]! MB/AN : v3.7
     real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  MP_SHCV             ! shallow conv precip entering land model [mm]      ! MB/AN : v3.7
-    real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  MP_SNOW             ! snow precipitation entering land model [mm]       ! MB/AN : v3.7 
-    real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  MP_GRAUP            ! graupel precipitation entering land model [mm]    ! MB/AN : v3.7
+    real(kind=C_DOUBLE),    allocatable, dimension(:,:)    ::  MP_SNOW             ! snow precipitation entering land model [mm]       ! MB/AN : v3.7
+    real(kind=C_DOUBLE),    allocatable, dimension(:,:)    ::  MP_GRAUP            ! graupel precipitation entering land model [mm]    ! MB/AN : v3.7
     real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  MP_HAIL             ! hail precipitation entering land model [mm]       ! MB/AN : v3.7 
     
 #ifdef WRF_HYDRO

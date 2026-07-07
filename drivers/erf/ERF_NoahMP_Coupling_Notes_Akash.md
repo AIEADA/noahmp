@@ -94,19 +94,48 @@ into the core. We zero it defensively (an uninitialized `SNOWBL` propagated into
 `MP_SNOW/PrecipSnow ~1e20` and tripped a balance abort — see §3). Snow reaches the core via
 `MP_SNOW`, not `SNOWBL`.
 
-Official source confirming this, in **both** upstream repos (`SNOWBL` is allocated, set to
-`undefined_real`, and never assigned or read into the core):
+**Proof (not just "it's initialized" — an exhaustive occurrence list).** A single init
+link would prove nothing: *every* field is declared/allocated/initialized the same way. What
+makes `SNOWBL` dead is that in WRF's driver those are the *only* places it appears — it is
+never assigned a real value and never read. Grepping the entire Noah-MP tree at WRF's pinned
+commit (`grep -rniE SNOWBL`), the WRF driver has exactly **three** hits, all non-functional:
 
-- **Canonical Noah-MP** (`NCAR/noahmp`, the standalone development repo):
-  [`drivers/wrf/NoahmpIOVarInitMod.F90#L595`](https://github.com/NCAR/noahmp/blob/badab7b4b51710037fc87f3dbf329b6be59b1b5a/drivers/wrf/NoahmpIOVarInitMod.F90#L595)
-  (allocation at
-  [`#L56`](https://github.com/NCAR/noahmp/blob/badab7b4b51710037fc87f3dbf329b6be59b1b5a/drivers/wrf/NoahmpIOVarInitMod.F90#L56)).
-- **WRF** (`wrf-model/WRF`): WRF vendors Noah-MP as the git submodule `phys/noahmp → NCAR/noahmp`
-  (see WRF's [`.gitmodules`](https://github.com/wrf-model/WRF/blob/master/.gitmodules)), pinned
-  at commit `5da0b241`. The exact file WRF ships is therefore
+| Location | What it does |
+|---|---|
+| `drivers/wrf/NoahmpIOVarType.F90:101` | type declaration |
+| `drivers/wrf/NoahmpIOVarInitMod.F90:56` | allocation |
+| `drivers/wrf/NoahmpIOVarInitMod.F90:595` | set to `undefined_real` |
+
+There is **no fourth occurrence** anywhere under `drivers/wrf/` — no assignment, no read.
+Two corroborating facts from the same grep:
+
+1. **The shared core `src/` (all the physics) contains ZERO occurrences of `SNOWBL`** — the
+   core literally cannot see it.
+2. **The module that actually feeds forcing into the core,
+   `drivers/wrf/ForcingVarInTransferMod.F90`, does not mention `SNOWBL` at all.** Snow enters
+   the core there via `MP_SNOW`/`MP_GRAUP`/`MP_RAINNC` (÷`DTBL`), e.g.
+   `PrecipSnowRefHeight = MP_SNOW(I,J)/DTBL` — *that* is the snow path, not `SNOWBL`.
+
+So `SNOWBL` in WRF is allocated-and-initialized dead weight; snow reaches the core through
+`MP_SNOW`. (By contrast, the pre-fix ERF driver at this same commit *did* read it —
+`drivers/erf/NoahmpDriverMainMod.F90:58,63`: `SNOWBL*DTBL → SNOWNCV = SNOWBL` — which is
+exactly the lumping remap we removed, and why an uninitialized `SNOWBL` produced the ~1e20
+balance abort.)
+
+Sources (`SNOWBL` declaration/alloc/init lines), in **both** upstream repos:
+
+- **Canonical Noah-MP** (`NCAR/noahmp`, standalone dev repo):
+  [`drivers/wrf/NoahmpIOVarInitMod.F90#L595`](https://github.com/NCAR/noahmp/blob/badab7b4b51710037fc87f3dbf329b6be59b1b5a/drivers/wrf/NoahmpIOVarInitMod.F90#L595),
+  alloc [`#L56`](https://github.com/NCAR/noahmp/blob/badab7b4b51710037fc87f3dbf329b6be59b1b5a/drivers/wrf/NoahmpIOVarInitMod.F90#L56),
+  and the real snow path
+  [`ForcingVarInTransferMod.F90#L53-L56`](https://github.com/NCAR/noahmp/blob/badab7b4b51710037fc87f3dbf329b6be59b1b5a/drivers/wrf/ForcingVarInTransferMod.F90#L53-L56).
+- **WRF** (`wrf-model/WRF`): vendors Noah-MP as the submodule `phys/noahmp → NCAR/noahmp`
+  (WRF [`.gitmodules`](https://github.com/wrf-model/WRF/blob/master/.gitmodules)) pinned at
+  `5da0b241`, so the shipped file is
   [`phys/noahmp/drivers/wrf/NoahmpIOVarInitMod.F90#L595`](https://github.com/NCAR/noahmp/blob/5da0b241e48ecfd9a2a1bd667ed554765856d589/drivers/wrf/NoahmpIOVarInitMod.F90#L595)
-  (allocation at
-  [`#L56`](https://github.com/NCAR/noahmp/blob/5da0b241e48ecfd9a2a1bd667ed554765856d589/drivers/wrf/NoahmpIOVarInitMod.F90#L56)).
+  (alloc [`#L56`](https://github.com/NCAR/noahmp/blob/5da0b241e48ecfd9a2a1bd667ed554765856d589/drivers/wrf/NoahmpIOVarInitMod.F90#L56);
+  snow path
+  [`ForcingVarInTransferMod.F90#L53-L56`](https://github.com/NCAR/noahmp/blob/5da0b241e48ecfd9a2a1bd667ed554765856d589/drivers/wrf/ForcingVarInTransferMod.F90#L53-L56)).
 
 ---
 

@@ -70,6 +70,11 @@ contains
       ! convention. SR (frozen fraction [-]) is now supplied by the caller (as WRF
       ! does) rather than hard-set to 0.
       ! ---------------------------------------------------------------------------
+      ! SNOWBL (accumulated snow forcing [mm]) is not currently supplied by the ERF
+      ! driver and defaults to the undefined sentinel; zero it so SNOWNCV/MP_SNOW ->
+      ! PrecipSnowRefHeight is defined (otherwise ~1e20 -> Noah-MP water-balance abort).
+      ! Frozen precip is instead handled via SR applied to the total RAINBL downstream.
+      NoahmpIO%SNOWBL  = 0.0
       NoahmpIO%RAINCV  = 0.0
       NoahmpIO%RAINNCV = NoahmpIO%RAINBL
       NoahmpIO%RAINSHV = 0.0

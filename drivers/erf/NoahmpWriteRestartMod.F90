@@ -45,6 +45,11 @@ module NoahmpWriteRestartMod
    ! varids -- accumulators / misc carried state
    integer, save, private :: id_sfcrunoff, id_udrunoff, id_smstav, id_smstot, &
                              id_emiss, id_grdflx
+   ! varids -- water/energy balance accumulators (per soil timestep). These must be
+   ! checkpointed: they are only zeroed on cold start, so without restoring them a
+   ! restart carries the undefined sentinel into the first soil window -> Noah-MP
+   ! water-balance abort.
+   integer, save, private :: id_accdwater, id_accprcp, id_accecan, id_accetran, id_accedir
    ! varids -- optional carbon / lake
    integer, save, private :: id_lfmass, id_rtmass, id_stmass, id_wood, &
                              id_grain, id_gdd, id_wslake
@@ -167,6 +172,13 @@ contains
          ierr = nf90_def_var(ncid, "EMISS",    NF90_DOUBLE, (/nx, ny/), id_emiss)
          ierr = nf90_def_var(ncid, "GRDFLX",   rtype, (/nx, ny/), id_grdflx)
 
+         ! --- water/energy balance accumulators (per soil timestep)
+         ierr = nf90_def_var(ncid, "ACC_DWATERXY", rtype, (/nx, ny/), id_accdwater)
+         ierr = nf90_def_var(ncid, "ACC_PRCPXY",   rtype, (/nx, ny/), id_accprcp)
+         ierr = nf90_def_var(ncid, "ACC_ECANXY",   rtype, (/nx, ny/), id_accecan)
+         ierr = nf90_def_var(ncid, "ACC_ETRANXY",  rtype, (/nx, ny/), id_accetran)
+         ierr = nf90_def_var(ncid, "ACC_EDIRXY",   rtype, (/nx, ny/), id_accedir)
+
          ! --- optional carbon / dveg (only if allocated)
          if (allocated(NoahmpIO%LFMASSXY)) &
             ierr = nf90_def_var(ncid, "LFMASSXY", rtype, (/nx, ny/), id_lfmass)
@@ -252,6 +264,13 @@ contains
       ierr = nf90_put_var(ncid, id_smstot,    NoahmpIO%SMSTOT,    start=start, count=count)
       ierr = nf90_put_var(ncid, id_emiss,     NoahmpIO%EMISS,     start=start, count=count)
       ierr = nf90_put_var(ncid, id_grdflx,    NoahmpIO%GRDFLX,    start=start, count=count)
+
+      ! --- balance accumulators
+      ierr = nf90_put_var(ncid, id_accdwater, NoahmpIO%ACC_DWATERXY, start=start, count=count)
+      ierr = nf90_put_var(ncid, id_accprcp,   NoahmpIO%ACC_PRCPXY,   start=start, count=count)
+      ierr = nf90_put_var(ncid, id_accecan,   NoahmpIO%ACC_ECANXY,   start=start, count=count)
+      ierr = nf90_put_var(ncid, id_accetran,  NoahmpIO%ACC_ETRANXY,  start=start, count=count)
+      ierr = nf90_put_var(ncid, id_accedir,   NoahmpIO%ACC_EDIRXY,   start=start, count=count)
 
       ! --- optional carbon / lake
       if (allocated(NoahmpIO%LFMASSXY)) ierr = nf90_put_var(ncid, id_lfmass, NoahmpIO%LFMASSXY, start=start, count=count)

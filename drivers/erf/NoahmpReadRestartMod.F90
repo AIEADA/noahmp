@@ -124,6 +124,16 @@ contains
       call get2dd(ncid,"EMISS",    NoahmpIO%EMISS,     start, count, .true.)  ! C_DOUBLE
       call get2d(ncid, "GRDFLX",   NoahmpIO%GRDFLX,    start, count, .true.)
 
+      ! water/energy balance accumulators (per soil timestep). required=.false. so a
+      ! legacy checkpoint without them still restores (missing -> keeps cold-init 0,
+      ! which is safe at a soil-step-boundary restart). Restoring them prevents the
+      ! undefined-sentinel -> Noah-MP water-balance abort on restart.
+      call get2d(ncid, "ACC_DWATERXY", NoahmpIO%ACC_DWATERXY, start, count, .false.)
+      call get2d(ncid, "ACC_PRCPXY",   NoahmpIO%ACC_PRCPXY,   start, count, .false.)
+      call get2d(ncid, "ACC_ECANXY",   NoahmpIO%ACC_ECANXY,   start, count, .false.)
+      call get2d(ncid, "ACC_ETRANXY",  NoahmpIO%ACC_ETRANXY,  start, count, .false.)
+      call get2d(ncid, "ACC_EDIRXY",   NoahmpIO%ACC_EDIRXY,   start, count, .false.)
+
       ! --- optional carbon / lake (only if allocated; missing var is skipped)
       if (allocated(NoahmpIO%LFMASSXY)) call get2d(ncid, "LFMASSXY", NoahmpIO%LFMASSXY, start, count, .false.)
       if (allocated(NoahmpIO%RTMASSXY)) call get2d(ncid, "RTMASSXY", NoahmpIO%RTMASSXY, start, count, .false.)

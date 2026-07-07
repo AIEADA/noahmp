@@ -150,6 +150,15 @@ contains
                                               IrrigationRateMicro*1000.0, IrrigationRateFlood*1000.0,              &
                                               EvapCanopyNetAcc, EvapGroundNetAcc, TranspirationAcc, RunoffSurface, &
                                               RunoffSubsurface, WaterTableDepth, TileDrain, WaterStorageWetland
+             ! ERF-DIAG: raw ES values to disambiguate f10.5 overflow (huge vs -9999 sentinel)
+             write(*,'("ERF-DIAG cell(",i0,",",i0,") ",a,es15.6)') GridIndexI,GridIndexJ,"WBErr=",WaterBalanceError
+             write(*,'("ERF-DIAG PrecipTotAcc=",es15.6," PrecipTotRefHeight=",es15.6," MainTimeStep=",es15.6)') &
+                          PrecipTotAcc, PrecipTotRefHeight, MainTimeStep
+             write(*,'("ERF-DIAG RAINBL_equiv=",es15.6," RunoffSurface=",es15.6," RunoffSubsurface=",es15.6)') &
+                          PrecipTotRefHeight*MainTimeStep, RunoffSurface, RunoffSubsurface
+             write(*,'("ERF-DIAG SfcWaterTotChgAcc=",es15.6," StorEnd=",es15.6," StorBeg=",es15.6)') &
+                          SfcWaterTotChgAcc, WaterStorageTotEnd, WaterStorageTotBeg
+             write(*,'("ERF-DIAG SoilMoist(1:4)=",4es13.5)') (SoilMoisture(LoopInd),LoopInd=1,min(4,NumSoilLayer))
              stop "Error: Water budget problem in NoahMP LSM"
           endif
 #endif

@@ -101,9 +101,14 @@ module NoahmpIOVarType
     real(kind=C_DOUBLE),    allocatable, dimension(:,:)    ::  SWDOWN              ! solar down at surface [W m-2]
     real(kind=C_DOUBLE),    allocatable, dimension(:,:)    ::  GLW                 ! longwave down at surface [W m-2]
     real(kind=C_DOUBLE),    allocatable, dimension(:,:,:)  ::  P8W                 ! 3D pressure, valid at interface [Pa]
-    real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  RAINBL              ! precipitation entering land model [mm] per time step
+    ! RAINBL and SR are exposed to the C++ side via C_LOC in NoahmpIO_fi.F90 and bound
+    ! as double* in NoahmpIO.H. They MUST be real(kind=C_DOUBLE) to match that binding.
+    ! kind_noahmp is single precision (4-byte) in this build (DOUBLE_PREC undefined), so
+    ! declaring them kind_noahmp made the C++ 8-byte writes land in a 4-byte array ->
+    ! NoahMP read garbage RAINBL (+-1e10..1e25) -> water-balance abort. See SWDOWN etc.
+    real(kind=C_DOUBLE),    allocatable, dimension(:,:)    ::  RAINBL              ! precipitation entering land model [mm] per time step
     real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  SNOWBL              ! snow entering land model [mm] per time step
-    real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  SR                  ! frozen precip ratio entering land model [-]
+    real(kind=C_DOUBLE),    allocatable, dimension(:,:)    ::  SR                  ! frozen precip ratio entering land model [-]
     real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  RAINCV              ! convective precip forcing [mm]
     real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  RAINNCV             ! non-convective precip forcing [mm]
     real(kind=kind_noahmp), allocatable, dimension(:,:)    ::  RAINSHV             ! shallow conv. precip forcing [mm]

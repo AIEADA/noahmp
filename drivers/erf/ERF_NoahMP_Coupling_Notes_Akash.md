@@ -94,11 +94,19 @@ into the core. We zero it defensively (an uninitialized `SNOWBL` propagated into
 `MP_SNOW/PrecipSnow ~1e20` and tripped a balance abort — see §3). Snow reaches the core via
 `MP_SNOW`, not `SNOWBL`.
 
-Official WRF/Noah-MP source confirming this (canonical upstream `NCAR/noahmp`), where
-`SNOWBL` is allocated and set to `undefined_real` and never touched again:
-[`drivers/wrf/NoahmpIOVarInitMod.F90#L595`](https://github.com/NCAR/noahmp/blob/badab7b4b51710037fc87f3dbf329b6be59b1b5a/drivers/wrf/NoahmpIOVarInitMod.F90#L595)
-(allocation at
-[`#L56`](https://github.com/NCAR/noahmp/blob/badab7b4b51710037fc87f3dbf329b6be59b1b5a/drivers/wrf/NoahmpIOVarInitMod.F90#L56)).
+Official source confirming this, in **both** upstream repos (`SNOWBL` is allocated, set to
+`undefined_real`, and never assigned or read into the core):
+
+- **Canonical Noah-MP** (`NCAR/noahmp`, the standalone development repo):
+  [`drivers/wrf/NoahmpIOVarInitMod.F90#L595`](https://github.com/NCAR/noahmp/blob/badab7b4b51710037fc87f3dbf329b6be59b1b5a/drivers/wrf/NoahmpIOVarInitMod.F90#L595)
+  (allocation at
+  [`#L56`](https://github.com/NCAR/noahmp/blob/badab7b4b51710037fc87f3dbf329b6be59b1b5a/drivers/wrf/NoahmpIOVarInitMod.F90#L56)).
+- **WRF** (`wrf-model/WRF`): WRF vendors Noah-MP as the git submodule `phys/noahmp → NCAR/noahmp`
+  (see WRF's [`.gitmodules`](https://github.com/wrf-model/WRF/blob/master/.gitmodules)), pinned
+  at commit `5da0b241`. The exact file WRF ships is therefore
+  [`phys/noahmp/drivers/wrf/NoahmpIOVarInitMod.F90#L595`](https://github.com/NCAR/noahmp/blob/5da0b241e48ecfd9a2a1bd667ed554765856d589/drivers/wrf/NoahmpIOVarInitMod.F90#L595)
+  (allocation at
+  [`#L56`](https://github.com/NCAR/noahmp/blob/5da0b241e48ecfd9a2a1bd667ed554765856d589/drivers/wrf/NoahmpIOVarInitMod.F90#L56)).
 
 ---
 

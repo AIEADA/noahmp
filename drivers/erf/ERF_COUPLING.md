@@ -166,6 +166,27 @@ Also fixed here: `NoahmpWriteLandMod.F90` land-output filename width overflow (t
 string was `I5.5`, overflowing past step 99999 → `lnd*****` and a NetCDF create/permission
 crash); widened to `I0.5` with a length-32 buffer.
 
+### Scope of the restarted state (carbon, canopy, crop, lake, TOPMODEL)
+
+The restart persists the **full internal Noah-MP prognostic state**, not just soil/snow:
+
+- canopy / vegetation: `CANICEXY`, `CANLIQXY`, `LAI`, `XSAI`, `TVXY`, `TGXY`, `EAHXY`, `TAHXY`;
+- dynamic-veg carbon pools: `LFMASSXY`, `RTMASSXY`, `STMASSXY`, `WOODXY`, `GRAINXY`, `GDDXY`,
+  and soil-carbon pools `STBLCPXY`, `FASTCPXY`;
+- crop (`PGSXY`), wetland (`WSURFXY`), lake (`WSLAKEXY`), TOPMODEL saturated fraction (`FSATXY`);
+- the water/energy balance accumulators (`ACC_*XY`) and the integer `ITIMESTEP`.
+
+Every one of these is `allocated()`-guarded, so it is only written/read when the scheme that
+owns it is active (e.g. the carbon pools exist only under dynamic vegetation / crop). This is
+what makes a restart bitwise-consistent with a continuous run for **any** namelist option set.
+
+**Important scoping note (to avoid overclaiming):** carbon and canopy are *internal Noah-MP
+prognostics that we made restart-safe*. They are **not** part of the per-step atmosphere↔land
+exchange with ERF's dynamical core — ERF does not carry a CO₂/biomass tracer and Noah-MP does
+not return a carbon (NEE/GPP/NPP) flux to the dycore. The per-step two-way coupling is the
+surface energy/moisture/momentum/precip exchange (§1, §3); carbon/canopy state simply
+evolves inside Noah-MP and is checkpointed so it survives restarts.
+
 ---
 
 ## 5. Files changed in `drivers/erf/`

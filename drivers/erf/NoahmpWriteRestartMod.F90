@@ -53,6 +53,20 @@ module NoahmpWriteRestartMod
    ! varids -- optional carbon / lake
    integer, save, private :: id_lfmass, id_rtmass, id_stmass, id_wood, &
                              id_grain, id_gdd, id_wslake
+   ! varids -- soil carbon pools (dynamic-veg carbon path)
+   integer, save, private :: id_stblcp, id_fastcp
+   ! varids -- optional-scheme carried state persisted for robustness so that a
+   ! restart never cold-starts a field when its scheme is (or becomes) active:
+   !   crop (PGSXY), wetland (WSURFXY), TOPMODEL saturated frac (FSATXY),
+   !   soil-timestep accumulators (ACC_*), SNICAR snow-aerosol/grain state, and
+   !   soil-albedo memory. Written/read only when the corresponding array is
+   !   allocated (i.e. the scheme is on); inert otherwise.
+   integer, save, private :: id_pgs, id_wsurf, id_fsat
+   integer, save, private :: id_accssoil, id_accqinsur, id_accqseva, id_accglaflw, id_accetrani
+   integer, save, private :: id_snrds, id_snfr, id_bcphi, id_ocphi, &
+                             id_dust1, id_dust2, id_dust3, id_dust4, id_dust5
+   integer, save, private :: id_albsoildir, id_albsoildif
+   integer, save, private :: numrad_d
 
 contains
 
@@ -103,6 +117,7 @@ contains
          ierr = nf90_def_dim(ncid, "NSOIL", NoahmpIO%NSOIL,    nsoil_d)
          ierr = nf90_def_dim(ncid, "NSNOW", NoahmpIO%NSNOW,    nsnow_d)
          ierr = nf90_def_dim(ncid, "NSNSO", NoahmpIO%NSNOW+NoahmpIO%NSOIL, nsnso_d)
+         ierr = nf90_def_dim(ncid, "NUMRAD", NoahmpIO%NUMRAD, numrad_d)
 
          ! Record the layer counts as global attributes for the read-side assert.
          ierr = nf90_put_att(ncid, NF90_GLOBAL, "NSOIL", NoahmpIO%NSOIL)
@@ -195,6 +210,56 @@ contains
          if (allocated(NoahmpIO%WSLAKEXY)) &
             ierr = nf90_def_var(ncid, "WSLAKEXY", NF90_DOUBLE, (/nx, ny/), id_wslake)
 
+         ! --- optional-scheme carried state (persisted for restart robustness so no
+         !     field cold-starts if its scheme is active). Guarded by allocated().
+         ! soil carbon pools (dynamic-veg carbon)
+         if (allocated(NoahmpIO%STBLCPXY)) &
+            ierr = nf90_def_var(ncid, "STBLCPXY", rtype, (/nx, ny/), id_stblcp)
+         if (allocated(NoahmpIO%FASTCPXY)) &
+            ierr = nf90_def_var(ncid, "FASTCPXY", rtype, (/nx, ny/), id_fastcp)
+         ! crop growth stage (integer), wetland storage, TOPMODEL saturated fraction
+         if (allocated(NoahmpIO%PGSXY)) &
+            ierr = nf90_def_var(ncid, "PGSXY",   NF90_INT, (/nx, ny/), id_pgs)
+         if (allocated(NoahmpIO%WSURFXY)) &
+            ierr = nf90_def_var(ncid, "WSURFXY", rtype, (/nx, ny/), id_wsurf)
+         if (allocated(NoahmpIO%FSATXY)) &
+            ierr = nf90_def_var(ncid, "FSATXY",  rtype, (/nx, ny/), id_fsat)
+         ! soil-timestep accumulators (carried across soil window when soil_timestep>dt)
+         if (allocated(NoahmpIO%ACC_SSOILXY)) &
+            ierr = nf90_def_var(ncid, "ACC_SSOILXY",  rtype, (/nx, ny/), id_accssoil)
+         if (allocated(NoahmpIO%ACC_QINSURXY)) &
+            ierr = nf90_def_var(ncid, "ACC_QINSURXY", rtype, (/nx, ny/), id_accqinsur)
+         if (allocated(NoahmpIO%ACC_QSEVAXY)) &
+            ierr = nf90_def_var(ncid, "ACC_QSEVAXY",  rtype, (/nx, ny/), id_accqseva)
+         if (allocated(NoahmpIO%ACC_GLAFLWXY)) &
+            ierr = nf90_def_var(ncid, "ACC_GLAFLWXY", rtype, (/nx, ny/), id_accglaflw)
+         if (allocated(NoahmpIO%ACC_ETRANIXY)) &
+            ierr = nf90_def_var(ncid, "ACC_ETRANIXY", rtype, (/nx, nsoil_d, ny/), id_accetrani)
+         ! SNICAR snow-layer aerosol / grain state (NX, NSNOW, NY)
+         if (allocated(NoahmpIO%SNRDSXY)) &
+            ierr = nf90_def_var(ncid, "SNRDSXY", rtype, (/nx, nsnow_d, ny/), id_snrds)
+         if (allocated(NoahmpIO%SNFRXY)) &
+            ierr = nf90_def_var(ncid, "SNFRXY",  rtype, (/nx, nsnow_d, ny/), id_snfr)
+         if (allocated(NoahmpIO%BCPHIXY)) &
+            ierr = nf90_def_var(ncid, "BCPHIXY", rtype, (/nx, nsnow_d, ny/), id_bcphi)
+         if (allocated(NoahmpIO%OCPHIXY)) &
+            ierr = nf90_def_var(ncid, "OCPHIXY", rtype, (/nx, nsnow_d, ny/), id_ocphi)
+         if (allocated(NoahmpIO%DUST1XY)) &
+            ierr = nf90_def_var(ncid, "DUST1XY", rtype, (/nx, nsnow_d, ny/), id_dust1)
+         if (allocated(NoahmpIO%DUST2XY)) &
+            ierr = nf90_def_var(ncid, "DUST2XY", rtype, (/nx, nsnow_d, ny/), id_dust2)
+         if (allocated(NoahmpIO%DUST3XY)) &
+            ierr = nf90_def_var(ncid, "DUST3XY", rtype, (/nx, nsnow_d, ny/), id_dust3)
+         if (allocated(NoahmpIO%DUST4XY)) &
+            ierr = nf90_def_var(ncid, "DUST4XY", rtype, (/nx, nsnow_d, ny/), id_dust4)
+         if (allocated(NoahmpIO%DUST5XY)) &
+            ierr = nf90_def_var(ncid, "DUST5XY", rtype, (/nx, nsnow_d, ny/), id_dust5)
+         ! soil albedo memory (NX, NUMRAD, NY)
+         if (allocated(NoahmpIO%ALBSOILDIRXY)) &
+            ierr = nf90_def_var(ncid, "ALBSOILDIRXY", rtype, (/nx, numrad_d, ny/), id_albsoildir)
+         if (allocated(NoahmpIO%ALBSOILDIFXY)) &
+            ierr = nf90_def_var(ncid, "ALBSOILDIFXY", rtype, (/nx, numrad_d, ny/), id_albsoildif)
+
          ierr = nf90_enddef(ncid)
       end if
 
@@ -280,6 +345,44 @@ contains
       if (allocated(NoahmpIO%GRAINXY))  ierr = nf90_put_var(ncid, id_grain,  NoahmpIO%GRAINXY,  start=start, count=count)
       if (allocated(NoahmpIO%GDDXY))    ierr = nf90_put_var(ncid, id_gdd,    NoahmpIO%GDDXY,    start=start, count=count)
       if (allocated(NoahmpIO%WSLAKEXY)) ierr = nf90_put_var(ncid, id_wslake, NoahmpIO%WSLAKEXY, start=start, count=count)
+
+      ! --- optional-scheme carried state (2D)
+      if (allocated(NoahmpIO%STBLCPXY)) ierr = nf90_put_var(ncid, id_stblcp, NoahmpIO%STBLCPXY, start=start, count=count)
+      if (allocated(NoahmpIO%FASTCPXY)) ierr = nf90_put_var(ncid, id_fastcp, NoahmpIO%FASTCPXY, start=start, count=count)
+      if (allocated(NoahmpIO%PGSXY))    ierr = nf90_put_var(ncid, id_pgs,    NoahmpIO%PGSXY,    start=start, count=count)
+      if (allocated(NoahmpIO%WSURFXY))  ierr = nf90_put_var(ncid, id_wsurf,  NoahmpIO%WSURFXY,  start=start, count=count)
+      if (allocated(NoahmpIO%FSATXY))   ierr = nf90_put_var(ncid, id_fsat,   NoahmpIO%FSATXY,   start=start, count=count)
+      if (allocated(NoahmpIO%ACC_SSOILXY))  ierr = nf90_put_var(ncid, id_accssoil,  NoahmpIO%ACC_SSOILXY,  start=start, count=count)
+      if (allocated(NoahmpIO%ACC_QINSURXY)) ierr = nf90_put_var(ncid, id_accqinsur, NoahmpIO%ACC_QINSURXY, start=start, count=count)
+      if (allocated(NoahmpIO%ACC_QSEVAXY))  ierr = nf90_put_var(ncid, id_accqseva,  NoahmpIO%ACC_QSEVAXY,  start=start, count=count)
+      if (allocated(NoahmpIO%ACC_GLAFLWXY)) ierr = nf90_put_var(ncid, id_accglaflw, NoahmpIO%ACC_GLAFLWXY, start=start, count=count)
+      ! --- soil-dim accumulator (NX, NSOIL, NY)
+      if (allocated(NoahmpIO%ACC_ETRANIXY)) &
+         ierr = nf90_put_var(ncid, id_accetrani, NoahmpIO%ACC_ETRANIXY, start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NSOIL,count(2)/))
+      ! --- SNICAR snow-layer state (NX, NSNOW, NY)
+      if (allocated(NoahmpIO%SNRDSXY)) &
+         ierr = nf90_put_var(ncid, id_snrds, NoahmpIO%SNRDSXY, start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NSNOW,count(2)/))
+      if (allocated(NoahmpIO%SNFRXY)) &
+         ierr = nf90_put_var(ncid, id_snfr,  NoahmpIO%SNFRXY,  start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NSNOW,count(2)/))
+      if (allocated(NoahmpIO%BCPHIXY)) &
+         ierr = nf90_put_var(ncid, id_bcphi, NoahmpIO%BCPHIXY, start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NSNOW,count(2)/))
+      if (allocated(NoahmpIO%OCPHIXY)) &
+         ierr = nf90_put_var(ncid, id_ocphi, NoahmpIO%OCPHIXY, start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NSNOW,count(2)/))
+      if (allocated(NoahmpIO%DUST1XY)) &
+         ierr = nf90_put_var(ncid, id_dust1, NoahmpIO%DUST1XY, start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NSNOW,count(2)/))
+      if (allocated(NoahmpIO%DUST2XY)) &
+         ierr = nf90_put_var(ncid, id_dust2, NoahmpIO%DUST2XY, start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NSNOW,count(2)/))
+      if (allocated(NoahmpIO%DUST3XY)) &
+         ierr = nf90_put_var(ncid, id_dust3, NoahmpIO%DUST3XY, start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NSNOW,count(2)/))
+      if (allocated(NoahmpIO%DUST4XY)) &
+         ierr = nf90_put_var(ncid, id_dust4, NoahmpIO%DUST4XY, start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NSNOW,count(2)/))
+      if (allocated(NoahmpIO%DUST5XY)) &
+         ierr = nf90_put_var(ncid, id_dust5, NoahmpIO%DUST5XY, start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NSNOW,count(2)/))
+      ! --- soil albedo memory (NX, NUMRAD, NY)
+      if (allocated(NoahmpIO%ALBSOILDIRXY)) &
+         ierr = nf90_put_var(ncid, id_albsoildir, NoahmpIO%ALBSOILDIRXY, start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NUMRAD,count(2)/))
+      if (allocated(NoahmpIO%ALBSOILDIFXY)) &
+         ierr = nf90_put_var(ncid, id_albsoildif, NoahmpIO%ALBSOILDIFXY, start=(/start(1),1,start(2)/), count=(/count(1),NoahmpIO%NUMRAD,count(2)/))
 
       if (NoahmpIO%blkid == (maxblocks-1)) then
          ierr = nf90_close(ncid)

@@ -143,6 +143,33 @@ contains
       if (allocated(NoahmpIO%GDDXY))    call get2d(ncid, "GDDXY",    NoahmpIO%GDDXY,    start, count, .false.)
       if (allocated(NoahmpIO%WSLAKEXY)) call get2dd(ncid, "WSLAKEXY", NoahmpIO%WSLAKEXY, start, count, .false.)  ! C_DOUBLE
 
+      ! --- optional-scheme carried state (restart robustness; all required=.false. so
+      !     a legacy checkpoint without them still restores, and a field is only read
+      !     when its array is allocated i.e. its scheme is active).
+      if (allocated(NoahmpIO%STBLCPXY)) call get2d(ncid, "STBLCPXY", NoahmpIO%STBLCPXY, start, count, .false.)
+      if (allocated(NoahmpIO%FASTCPXY)) call get2d(ncid, "FASTCPXY", NoahmpIO%FASTCPXY, start, count, .false.)
+      if (allocated(NoahmpIO%PGSXY))    call get2di(ncid,"PGSXY",    NoahmpIO%PGSXY,    start, count, .false.)
+      if (allocated(NoahmpIO%WSURFXY))  call get2d(ncid, "WSURFXY",  NoahmpIO%WSURFXY,  start, count, .false.)
+      if (allocated(NoahmpIO%FSATXY))   call get2d(ncid, "FSATXY",   NoahmpIO%FSATXY,   start, count, .false.)
+      if (allocated(NoahmpIO%ACC_SSOILXY))  call get2d(ncid, "ACC_SSOILXY",  NoahmpIO%ACC_SSOILXY,  start, count, .false.)
+      if (allocated(NoahmpIO%ACC_QINSURXY)) call get2d(ncid, "ACC_QINSURXY", NoahmpIO%ACC_QINSURXY, start, count, .false.)
+      if (allocated(NoahmpIO%ACC_QSEVAXY))  call get2d(ncid, "ACC_QSEVAXY",  NoahmpIO%ACC_QSEVAXY,  start, count, .false.)
+      if (allocated(NoahmpIO%ACC_GLAFLWXY)) call get2d(ncid, "ACC_GLAFLWXY", NoahmpIO%ACC_GLAFLWXY, start, count, .false.)
+      if (allocated(NoahmpIO%ACC_ETRANIXY)) call get3d(ncid, "ACC_ETRANIXY", NoahmpIO%ACC_ETRANIXY, start, count, NoahmpIO%NSOIL, .false.)
+      ! SNICAR snow-layer state
+      if (allocated(NoahmpIO%SNRDSXY)) call get3d(ncid, "SNRDSXY", NoahmpIO%SNRDSXY, start, count, NoahmpIO%NSNOW, .false.)
+      if (allocated(NoahmpIO%SNFRXY))  call get3d(ncid, "SNFRXY",  NoahmpIO%SNFRXY,  start, count, NoahmpIO%NSNOW, .false.)
+      if (allocated(NoahmpIO%BCPHIXY)) call get3d(ncid, "BCPHIXY", NoahmpIO%BCPHIXY, start, count, NoahmpIO%NSNOW, .false.)
+      if (allocated(NoahmpIO%OCPHIXY)) call get3d(ncid, "OCPHIXY", NoahmpIO%OCPHIXY, start, count, NoahmpIO%NSNOW, .false.)
+      if (allocated(NoahmpIO%DUST1XY)) call get3d(ncid, "DUST1XY", NoahmpIO%DUST1XY, start, count, NoahmpIO%NSNOW, .false.)
+      if (allocated(NoahmpIO%DUST2XY)) call get3d(ncid, "DUST2XY", NoahmpIO%DUST2XY, start, count, NoahmpIO%NSNOW, .false.)
+      if (allocated(NoahmpIO%DUST3XY)) call get3d(ncid, "DUST3XY", NoahmpIO%DUST3XY, start, count, NoahmpIO%NSNOW, .false.)
+      if (allocated(NoahmpIO%DUST4XY)) call get3d(ncid, "DUST4XY", NoahmpIO%DUST4XY, start, count, NoahmpIO%NSNOW, .false.)
+      if (allocated(NoahmpIO%DUST5XY)) call get3d(ncid, "DUST5XY", NoahmpIO%DUST5XY, start, count, NoahmpIO%NSNOW, .false.)
+      ! soil albedo memory (NUMRAD bands)
+      if (allocated(NoahmpIO%ALBSOILDIRXY)) call get3d(ncid, "ALBSOILDIRXY", NoahmpIO%ALBSOILDIRXY, start, count, NoahmpIO%NUMRAD, .false.)
+      if (allocated(NoahmpIO%ALBSOILDIFXY)) call get3d(ncid, "ALBSOILDIFXY", NoahmpIO%ALBSOILDIFXY, start, count, NoahmpIO%NUMRAD, .false.)
+
       if (NoahmpIO%blkid == (maxblocks-1)) then
          ierr = nf90_close(ncid)
       end if

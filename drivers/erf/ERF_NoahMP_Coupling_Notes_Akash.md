@@ -94,6 +94,12 @@ into the core. We zero it defensively (an uninitialized `SNOWBL` propagated into
 `MP_SNOW/PrecipSnow ~1e20` and tripped a balance abort — see §3). Snow reaches the core via
 `MP_SNOW`, not `SNOWBL`.
 
+Official WRF/Noah-MP source confirming this (canonical upstream `NCAR/noahmp`), where
+`SNOWBL` is allocated and set to `undefined_real` and never touched again:
+[`drivers/wrf/NoahmpIOVarInitMod.F90#L595`](https://github.com/NCAR/noahmp/blob/badab7b4b51710037fc87f3dbf329b6be59b1b5a/drivers/wrf/NoahmpIOVarInitMod.F90#L595)
+(allocation at
+[`#L56`](https://github.com/NCAR/noahmp/blob/badab7b4b51710037fc87f3dbf329b6be59b1b5a/drivers/wrf/NoahmpIOVarInitMod.F90#L56)).
+
 ---
 
 ## 2. The RAINBL / SR / MP_* kind mismatch (the bug that masked everything)

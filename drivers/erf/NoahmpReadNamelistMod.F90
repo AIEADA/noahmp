@@ -56,7 +56,7 @@ contains
     integer                 :: num_urban_hi     = 15 
     integer                 :: num_urban_ngr    = 10  ! = ngr_u in bep_bem.F
     integer                 :: noahmp_output    = 0
-    real(kind=kind_noahmp)  :: urban_atmosphere_thickness = 2.0
+    real(kind=kind_noahmp)  :: urban_atmosphere_thickness = 5.0
     real(kind=kind_noahmp)  :: soil_timestep    = 0.0   ! soil timestep (default=0: same as main noahmp timestep)
 
     character(len=256)      :: forcing_name_T  = "T2D"
@@ -193,7 +193,6 @@ contains
     NoahmpIO%start_min               = undefined_int
     NoahmpIO%khour                   = undefined_int
     NoahmpIO%kday                    = undefined_int
-    NoahmpIO%zlvl                    = undefined_real
     NoahmpIO%forcing_timestep        = undefined_int
     NoahmpIO%noah_timestep           = undefined_int
     NoahmpIO%output_timestep         = undefined_int
@@ -215,7 +214,11 @@ contains
        stop " ***** ERROR: Problem reading namelist NOAHLSM_OFFLINE"
     endif
     close(30)
-  
+
+    ! Use the ERF-coupled zlvl if it was set externally; otherwise fall back
+    ! to the namelist value (which has just been read above).
+    if (NoahmpIO%zlvl == undefined_real) NoahmpIO%zlvl = zlvl
+
     NoahmpIO%DTBL            = real(noah_timestep)
     NoahmpIO%soiltstep       = soil_timestep
     NoahmpIO%NSOIL           = nsoil
@@ -343,15 +346,15 @@ contains
          if (NoahmpIO%rank == 0) write(*, *)
          stop
        endif
-       NoahmpIO%num_urban_atmosphere = int(zlvl/urban_atmosphere_thickness)
-       if (zlvl - NoahmpIO%num_urban_atmosphere*urban_atmosphere_thickness >= 0.5*urban_atmosphere_thickness)  &
+       NoahmpIO%num_urban_atmosphere = int(NoahmpIO%zlvl/urban_atmosphere_thickness)
+       if (NoahmpIO%zlvl - NoahmpIO%num_urban_atmosphere*urban_atmosphere_thickness >= 0.5*urban_atmosphere_thickness)  &
            NoahmpIO%num_urban_atmosphere = NoahmpIO%num_urban_atmosphere + 1
        if ( NoahmpIO%num_urban_atmosphere <= 2) then
          if (NoahmpIO%rank == 0) write(*, *)
          if (NoahmpIO%rank == 0) write(*, '(" ***** Namelist error: ******************************************************")')
          if (NoahmpIO%rank == 0) write(*, '(" ***** ")')
-         if (NoahmpIO%rank == 0) write(*, '(" *****       When running BEP/BEM, num_urban_atmosphere must contain at least 3 levels, ")')
-         if (NoahmpIO%rank == 0) write(*, '(" *****        decrease URBAN_ATMOSPHERE_THICKNESS")')
+         if (NoahmpIO%rank == 0) write(*, '(" ***** When running BEP/BEM, num_urban_atmosphere must contain at least 3 levels, ")')
+         if (NoahmpIO%rank == 0) write(*, '(" ***** increase ZLVL or decrease URBAN_ATMOSPHERE_THICKNESS")')
          if (NoahmpIO%rank == 0) write(*, *)
          stop
        endif
@@ -428,7 +431,6 @@ contains
     NoahmpIO%split_output_count                = split_output_count
     NoahmpIO%skip_first_output                 = skip_first_output
     NoahmpIO%kday                              = kday
-    NoahmpIO%zlvl                              = zlvl
     NoahmpIO%erf_setup_file_01                 = erf_setup_file_01
     NoahmpIO%erf_setup_file_02                 = erf_setup_file_02
     NoahmpIO%erf_setup_file_03                 = erf_setup_file_03

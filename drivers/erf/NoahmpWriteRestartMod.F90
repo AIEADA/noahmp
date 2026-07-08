@@ -17,7 +17,6 @@ module NoahmpWriteRestartMod
 
    use mpi
    use netcdf
-   use iso_c_binding, only : C_DOUBLE
    use Machine, only : kind_noahmp
    use NoahmpIOVarType
 
@@ -156,8 +155,9 @@ contains
          ierr = nf90_def_var(ncid, "CHXY",    rtype, (/nx, ny/), id_ch)
          ierr = nf90_def_var(ncid, "FWETXY",  rtype, (/nx, ny/), id_fwet)
          ierr = nf90_def_var(ncid, "QSFC",    rtype, (/nx, ny/), id_qsfc)
-         ! TSK, EMISS are declared C_DOUBLE in NoahmpIO -> always NF90_DOUBLE.
-         ierr = nf90_def_var(ncid, "TSK",     NF90_DOUBLE, (/nx, ny/), id_tsk)
+         ! TSK, EMISS, WSLAKEXY use the C-boundary kind c_kind_noahmp, which
+         ! equals kind_noahmp in every build -> the same rtype as the rest.
+         ierr = nf90_def_var(ncid, "TSK",     rtype, (/nx, ny/), id_tsk)
          ierr = nf90_def_var(ncid, "QSNOWXY", rtype, (/nx, ny/), id_qsnow)
          ierr = nf90_def_var(ncid, "QRAINXY", rtype, (/nx, ny/), id_qrain)
 
@@ -184,7 +184,7 @@ contains
          ierr = nf90_def_var(ncid, "UDRUNOFF", rtype, (/nx, ny/), id_udrunoff)
          ierr = nf90_def_var(ncid, "SMSTAV",   rtype, (/nx, ny/), id_smstav)
          ierr = nf90_def_var(ncid, "SMSTOT",   rtype, (/nx, ny/), id_smstot)
-         ierr = nf90_def_var(ncid, "EMISS",    NF90_DOUBLE, (/nx, ny/), id_emiss)
+         ierr = nf90_def_var(ncid, "EMISS",    rtype, (/nx, ny/), id_emiss)
          ierr = nf90_def_var(ncid, "GRDFLX",   rtype, (/nx, ny/), id_grdflx)
 
          ! --- water/energy balance accumulators (per soil timestep)
@@ -208,7 +208,7 @@ contains
          if (allocated(NoahmpIO%GDDXY)) &
             ierr = nf90_def_var(ncid, "GDDXY",    rtype, (/nx, ny/), id_gdd)
          if (allocated(NoahmpIO%WSLAKEXY)) &
-            ierr = nf90_def_var(ncid, "WSLAKEXY", NF90_DOUBLE, (/nx, ny/), id_wslake)
+            ierr = nf90_def_var(ncid, "WSLAKEXY", rtype, (/nx, ny/), id_wslake)
 
          ! --- optional-scheme carried state (persisted for restart robustness so no
          !     field cold-starts if its scheme is active). Guarded by allocated().
